@@ -19,7 +19,6 @@ namespace Facade.Services
         public async Task<int> GetCountAsync()
         {
             var cartId = await _session.GetAsync<string>("CartId");
-            var debug = await _db.CartItems.ToListAsync();
             var count = await _db.CartItems
                 .Where(item => item.CartId == cartId)
                 .Select(item => item.Quantity)
