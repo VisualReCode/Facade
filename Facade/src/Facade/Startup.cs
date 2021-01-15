@@ -18,24 +18,27 @@ namespace Facade
 
         public IConfiguration Configuration { get; }
 
-        // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddHttpContextAccessor();
             services.AddScoped<FacadeSession>();
             services.AddScoped<ShoppingCart>();
+
+            services.AddAuthentication("Facade")
+                .AddScheme<FacadeAuthenticationOptions, FacadeAuthenticationHandler>("Facade",
+                    o => Configuration.GetSection("FacadeAuthentication").Bind(o));
             
             services.AddDbContextPool<WingtipToysContext>(builder =>
             {
                 builder.UseSqlServer(
                     "Data Source=(LocalDB)\\MSSQLLocalDB;AttachDbFilename=D:\\aspnet\\Wingtip-Toys\\WingtipToys\\App_Data\\wingtiptoys.mdf;Integrated Security=True");
             });
+
             services.AddControllersWithViews();
             services.AddReverseProxy() 
                 .LoadFromConfig(Configuration.GetSection("ReverseProxy"));
         }
 
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             if (env.IsDevelopment())
@@ -45,7 +48,6 @@ namespace Facade
             else
             {
                 app.UseExceptionHandler("/Home/Error");
-                // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
             app.UseHttpsRedirection();
@@ -53,6 +55,7 @@ namespace Facade
 
             app.UseRouting();
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
