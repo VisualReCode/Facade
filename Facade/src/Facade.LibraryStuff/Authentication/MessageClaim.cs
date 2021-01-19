@@ -2,7 +2,7 @@
 using System.Security.Claims;
 using MessagePack;
 
-namespace Facade.Services
+namespace Facade.LibraryStuff.Authentication
 {
     [MessagePackObject]
     public class MessageClaim

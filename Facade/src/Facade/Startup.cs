@@ -1,12 +1,12 @@
 using System;
 using System.Net;
 using System.Net.Http;
-using System.Threading.Tasks;
 using Facade.Data;
+using Facade.LibraryStuff.Authentication;
+using Facade.LibraryStuff.Proxy;
 using Facade.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -31,9 +31,8 @@ namespace Facade
             services.AddFacadeSession();
             services.AddScoped<ShoppingCart>();
 
-            services.AddAuthentication("Facade")
-                .AddScheme<FacadeAuthenticationOptions, FacadeAuthenticationHandler>("Facade",
-                    o => Configuration.GetSection("FacadeAuthentication").Bind(o));
+            services.AddAuthentication(FacadeAuthenticationDefaults.Scheme)
+                .AddFacade();
             
             services.AddDbContextPool<WingtipToysContext>(builder =>
             {
@@ -46,18 +45,18 @@ namespace Facade
                 .LoadFromConfig(Configuration.GetSection("ReverseProxy"));
         }
 
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IHttpProxy httpProxy)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            var httpClient = new HttpMessageInvoker(new SocketsHttpHandler()
-            {
-                UseProxy = false,
-                AllowAutoRedirect = false,
-                AutomaticDecompression = DecompressionMethods.None,
-                UseCookies = false
-            });
-            var transformer = new RedirectTransformer();
-            var requestOptions = new RequestProxyOptions(TimeSpan.FromSeconds(100), null);
-
+            // var httpClient = new HttpMessageInvoker(new SocketsHttpHandler()
+            // {
+            //     UseProxy = false,
+            //     AllowAutoRedirect = false,
+            //     AutomaticDecompression = DecompressionMethods.None,
+            //     UseCookies = false
+            // });
+            // var transformer = new RedirectTransformer();
+            // var requestOptions = new RequestProxyOptions(TimeSpan.FromSeconds(100), null);
+            //
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
@@ -80,31 +79,15 @@ namespace Facade
                 endpoints.MapControllerRoute(
                     name: "default",
                     pattern: "{controller=Home}/{action=Index}/{id?}");
-                
-                endpoints.Map("/{**catch-all}", async httpContext =>
-                {
-                    await httpProxy.ProxyAsync(httpContext, "http://localhost:24019/", httpClient, requestOptions, transformer);
-                    // var errorFeature = httpContext.Features.Get<IProxyErrorFeature>();
-                    // if (errorFeature != null)
-                    // {
-                    //     var error = errorFeature.Error;
-                    //     var exception = errorFeature.Exception;
-                    // }
-                });
+
+                endpoints.MapFacadeProxy();
+                //
+                // endpoints.Map("/{**catch-all}", async httpContext =>
+                // {
+                //     await httpProxy.ProxyAsync(httpContext, "http://localhost:24019/", httpClient, requestOptions, transformer);
+                // });
             });
         }
 
     }
-        internal class RedirectTransformer : HttpTransformer
-        {
-            public override async Task TransformResponseAsync(HttpContext context, HttpResponseMessage response)
-            {
-                if (response.Headers.Location?.IsAbsoluteUri == true)
-                {
-                    var relative = response.Headers.Location.PathAndQuery;
-                    response.Headers.Location = new Uri(relative, UriKind.Relative);
-                }
-                await base.TransformResponseAsync(context, response);
-            }
-        }
 }

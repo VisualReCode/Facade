@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authentication;
 
-namespace Facade.Services
+namespace Facade.LibraryStuff.Authentication
 {
     public class FacadeAuthenticationOptions : AuthenticationSchemeOptions
     {
