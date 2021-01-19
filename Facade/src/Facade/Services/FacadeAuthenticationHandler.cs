@@ -1,12 +1,14 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
 using MessagePack;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -59,6 +61,15 @@ namespace Facade.Services
                 Logger.LogError(ex, ex.Message);
                 return AuthenticateResult.Fail(ex);
             }
+        }
+
+        protected override Task HandleChallengeAsync(AuthenticationProperties properties)
+        {
+            var relativeUri = Request.GetEncodedPathAndQuery();
+            var escaped = Uri.EscapeDataString(relativeUri);
+            Response.StatusCode = 302;
+            Response.Headers["Location"] = $"/Account/Login?ReturnUrl={escaped}";
+            return Task.CompletedTask;
         }
 
         private static async Task<ClaimsPrincipal> DeserializePrincipal(Stream stream)

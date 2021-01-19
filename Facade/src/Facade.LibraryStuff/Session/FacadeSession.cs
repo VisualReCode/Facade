@@ -1,12 +1,11 @@
 ﻿using System;
-using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using MessagePack;
 using MessagePack.Resolvers;
 using Microsoft.AspNetCore.Http;
 
-namespace Facade.Services
+namespace Facade.LibraryStuff.Session
 {
     public class FacadeSession
     {
